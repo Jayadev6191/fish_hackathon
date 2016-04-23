@@ -3,13 +3,26 @@ angular.module('starter.controllers', [])
 .controller('DashCtrl', function($scope,$ionicPlatform,$cordovaGeolocation) {
   $ionicPlatform.ready(function() {
     console.log("hi");
+
+    
     var posOptions = {timeout: 10000, enableHighAccuracy: false};
     $cordovaGeolocation
       .getCurrentPosition(posOptions)
       .then(function (position) {
         console.log(position);
-        var lat  = position.coords.latitude;
-        var long = position.coords.longitude;
+        $scope.lat  = position.coords.latitude;
+        $scope.long = position.coords.longitude;
+
+
+        var latLng = new google.maps.LatLng($scope.lat, $scope.long);
+
+        var mapOptions = {
+            center: latLng,
+            zoom: 15,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
 
       }, function(err) {
         // error
