@@ -1,20 +1,20 @@
 angular.module('starter.controllers', [])
 
-.controller('DashCtrl', function($scope,$ionicPlatform) {
+.controller('DashCtrl', function($scope,$ionicPlatform,$cordovaGeolocation) {
   $ionicPlatform.ready(function() {
     console.log("hi");
-  });
-  // var posOptions = {timeout: 10000, enableHighAccuracy: false};
-  // $cordovaGeolocation
-  //   .getCurrentPosition(posOptions)
-  //   .then(function (position) {
-  //     console.log(position);
-  //     var lat  = position.coords.latitude;
-  //     var long = position.coords.longitude;
+    var posOptions = {timeout: 10000, enableHighAccuracy: false};
+    $cordovaGeolocation
+      .getCurrentPosition(posOptions)
+      .then(function (position) {
+        console.log(position);
+        var lat  = position.coords.latitude;
+        var long = position.coords.longitude;
 
-  //   }, function(err) {
-  //     // error
-  //   });
+      }, function(err) {
+        // error
+      });
+    });
 
 })
 
