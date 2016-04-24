@@ -13,7 +13,8 @@ body{
 #map{
 	
 	margin:0px auto;
-	width:1200px;
+	margin-top:-20px;
+	width:1280px;
 	height:800px;
 }
 

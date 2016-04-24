@@ -57,7 +57,7 @@ angular.module('starter.controllers', [])
                           console.log(latLng);
                           var mapOptions = {
                               center: latLng,
-                              zoom: 8,
+                              zoom: 4,
                               mapTypeId: google.maps.MapTypeId.ROADMAP
                           };
 
@@ -71,38 +71,83 @@ angular.module('starter.controllers', [])
                             draggable: true
                           });
 
-                          var arr = [
-                                      {
-                                        "latitude":-88.5318000913,
-                                        "longitude":41.0076104838
-                                      },
-                                      {
-                                        "latitude": -88.5318000913,
-                                        "longitude":42.4733776149},
-                                      {
-                                        "latitude":-86.0848991275,
-                                        "longitude":42.4733776149},
-                                      {
-                                        "latitude":-86.0848991275,
-                                        "longitude":41.0076104838
-                                      },
-                                      {
-                                        "latitude":-88.5318000913,
-                                        "longitude":41.0076104838
-                                      }
-                                    ];
-
-                          
-                          $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&startDT=2016-01-01T00:00-0700&endDT=2016-04-23T01:00-0700&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
-                            console.log(data);
-
-
+                          $http.get("../data/final.json").then(function(result){
+                              console.log(result.data);
+                              for(var i=0;i<result.data.length;i++){
+                                dropPin(result.data[i]);
+                              }
                           });
 
-                          for(var i=0;i<arr.length;i++){
-                            console.log(arr[i]);
-                            $http.get("")
+                          function dropPin(pinData){
+                            console.log(pinData);
+                            var latLng = new google.maps.LatLng(pinData.latitude, pinData.longitude);
+                            var pin;
+                            // var icon = {
+                          //     url: "../img/fishpin_minimally_suitable.png", // url
+                          //     scaledSize: new google.maps.Size(50, 50), // scaled size
+                          //     origin: new google.maps.Point(0,0), // origin
+                          //     anchor: new google.maps.Point(0, 0) // anchor
+                          // };
+                            switch(pinData.suitability.toLowerCase()) {
+                                case 'minimally suitable':
+                                    pin = {
+                                          url: "../img/fishpin_minimally_suitable.png", // url
+                                          scaledSize: new google.maps.Size(50, 50), // scaled size
+                                          origin: new google.maps.Point(0,0), // origin
+                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                    };
+                                    break;
+                                case 'very suitable':
+                                    pin = {
+                                          url: "../img/fishpin_very_suitable.png", // url
+                                          scaledSize: new google.maps.Size(50, 50), // scaled size
+                                          origin: new google.maps.Point(0,0), // origin
+                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                    };
+                                    break;
+                                case 'suitable':
+                                    pin = {
+                                          url: '../img/fishpin_suitable.png', // url
+                                          scaledSize: new google.maps.Size(50, 50), // scaled size
+                                          origin: new google.maps.Point(0,0), // origin
+                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                    };
+                                    break;
+                                case 'highly suitable':
+                                    pin = {
+                                          url: '../img/fishpin_highly_suitable.png', // url
+                                          scaledSize: new google.maps.Size(50, 50), // scaled size
+                                          origin: new google.maps.Point(0,0), // origin
+                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                    };
+                                    break;
+                                case 'highly suitable':
+                                    pin = {
+                                          url: '../img/fishpin_not_suitable.png', // url
+                                          scaledSize: new google.maps.Size(50, 50), // scaled size
+                                          origin: new google.maps.Point(0,0), // origin
+                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                    };
+                                    break;
+                                default:
+                                    break;
+                            }
+                            var fishPin = new google.maps.Marker({
+                              position: latLng,
+                              map: $scope.map,
+                              animation: google.maps.Animation.DROP,
+                              draggable: false,
+                              icon:pin
+                            });
                           }
+
+                          
+                          // $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&startDT=2016-01-01T00:00-0700&endDT=2016-04-23T01:00-0700&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
+                          //   console.log(data);
+
+
+                          // });
+
 
                           google.maps.event.addListener($scope.map, 'dragend', function(event) { 
                               var new_coordinates = {
@@ -113,10 +158,10 @@ angular.module('starter.controllers', [])
                               console.log(new_coordinates);
 
 
-                              $http.get('https://floating-basin-31957.herokuapp.com/').then(function(data){
-                                // console.log('test');
-                                // console.log(data);
-                              });
+                              // $http.get('https://floating-basin-31957.herokuapp.com/').then(function(data){
+                              //   // console.log('test');
+                              //   // console.log(data);
+                              // });
 
                               // API Call to Dan's Service
 
