@@ -1,6 +1,6 @@
 angular.module('starter.controllers', [])
 
-.controller('DashCtrl', function($scope,$ionicPlatform,$cordovaGeolocation,$timeout, $ionicLoading) {
+.controller('DashCtrl', function($scope,$ionicPlatform,$timeout, $ionicLoading,$http) {
   $ionicPlatform.ready(function() {
     $scope.currentState = $("#states").val();
     console.log($scope.currentState);
@@ -9,6 +9,7 @@ angular.module('starter.controllers', [])
         $scope.currentState = this.value;
     });
 
+    var posOptions = {timeout: 10000, enableHighAccuracy: false};
     // Setup the loader
     $ionicLoading.show({
       content: 'Loading',
@@ -45,14 +46,20 @@ angular.module('starter.controllers', [])
 
                           $('#states option[value='+state+']').prop('selected', true);
 
+                          // var image = "../img/fishpin_minimally_suitable.png";
 
+                          // var icon = {
+                          //     url: "../img/fishpin_minimally_suitable.png", // url
+                          //     scaledSize: new google.maps.Size(50, 50), // scaled size
+                          //     origin: new google.maps.Point(0,0), // origin
+                          //     anchor: new google.maps.Point(0, 0) // anchor
+                          // };
+                          console.log(latLng);
                           var mapOptions = {
                               center: latLng,
                               zoom: 8,
                               mapTypeId: google.maps.MapTypeId.ROADMAP
                           };
-
-                          var image = "../img/asian_carp.png";
 
                           $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
 
@@ -62,6 +69,57 @@ angular.module('starter.controllers', [])
                             title: 'You are here!',
                             animation: google.maps.Animation.DROP,
                             draggable: true
+                          });
+
+                          var arr = [
+                                      {
+                                        "latitude":-88.5318000913,
+                                        "longitude":41.0076104838
+                                      },
+                                      {
+                                        "latitude": -88.5318000913,
+                                        "longitude":42.4733776149},
+                                      {
+                                        "latitude":-86.0848991275,
+                                        "longitude":42.4733776149},
+                                      {
+                                        "latitude":-86.0848991275,
+                                        "longitude":41.0076104838
+                                      },
+                                      {
+                                        "latitude":-88.5318000913,
+                                        "longitude":41.0076104838
+                                      }
+                                    ];
+
+                          
+                          $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&startDT=2016-01-01T00:00-0700&endDT=2016-04-23T01:00-0700&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
+                            console.log(data);
+
+
+                          });
+
+                          for(var i=0;i<arr.length;i++){
+                            console.log(arr[i]);
+                            $http.get("")
+                          }
+
+                          google.maps.event.addListener($scope.map, 'dragend', function(event) { 
+                              var new_coordinates = {
+                                  "latitude":this.getCenter().lat(),
+                                  "longitude": this.getCenter().lng()
+                              };
+
+                              console.log(new_coordinates);
+
+
+                              $http.get('https://floating-basin-31957.herokuapp.com/').then(function(data){
+                                // console.log('test');
+                                // console.log(data);
+                              });
+
+                              // API Call to Dan's Service
+
                           });
                       }
                       else  {
@@ -73,11 +131,9 @@ angular.module('starter.controllers', [])
               }
             });
 
-            // deferred.resolve(coordinates);
             });
     }
 
-    var posOptions = {timeout: 10000, enableHighAccuracy: false};
     });
 
 })
