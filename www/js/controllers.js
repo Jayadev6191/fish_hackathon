@@ -160,7 +160,16 @@ angular.module('starter.controllers', [])
                                   }
                                 }
                               } // end for loop
-                              console.log(viableUsgsSiteCodes)
+                              console.log(viableUsgsSiteCodes);
+
+                              var obj = {"site_codes":viableUsgsSiteCodes};
+                              console.log(JSON.stringify(obj));
+
+                              var abc = {"name":"jay"};
+
+                              $http.post('https://stark-headland-52611.herokuapp.com/getSiteData',JSON.stringify(abc)).then(function(data){
+                                console.log(data);
+                              });
                             }
                           );
 
