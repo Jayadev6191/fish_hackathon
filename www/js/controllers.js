@@ -88,7 +88,7 @@ angular.module('starter.controllers', [])
                                           url: "../img/fishpin_minimally_suitable.png", // url
                                           scaledSize: new google.maps.Size(50, 50), // scaled size
                                           origin: new google.maps.Point(0,0), // origin
-                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                          anchor: new google.maps.Point(0, 0) // anchor
                                     };
                                     break;
                                 case 'very suitable':
@@ -96,7 +96,7 @@ angular.module('starter.controllers', [])
                                           url: "../img/fishpin_very_suitable.png", // url
                                           scaledSize: new google.maps.Size(50, 50), // scaled size
                                           origin: new google.maps.Point(0,0), // origin
-                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                          anchor: new google.maps.Point(0, 0) // anchor
                                     };
                                     break;
                                 case 'suitable':
@@ -104,7 +104,7 @@ angular.module('starter.controllers', [])
                                           url: '../img/fishpin_suitable.png', // url
                                           scaledSize: new google.maps.Size(50, 50), // scaled size
                                           origin: new google.maps.Point(0,0), // origin
-                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                          anchor: new google.maps.Point(0, 0) // anchor
                                     };
                                     break;
                                 case 'highly suitable':
@@ -112,7 +112,7 @@ angular.module('starter.controllers', [])
                                           url: '../img/fishpin_highly_suitable.png', // url
                                           scaledSize: new google.maps.Size(50, 50), // scaled size
                                           origin: new google.maps.Point(0,0), // origin
-                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                          anchor: new google.maps.Point(0, 0) // anchor
                                     };
                                     break;
                                 case 'highly suitable':
@@ -120,7 +120,7 @@ angular.module('starter.controllers', [])
                                           url: '../img/fishpin_not_suitable.png', // url
                                           scaledSize: new google.maps.Size(50, 50), // scaled size
                                           origin: new google.maps.Point(0,0), // origin
-                                          anchor: new google.maps.Point(0, 0) // anchor           
+                                          anchor: new google.maps.Point(0, 0) // anchor
                                     };
                                     break;
                                 default:
@@ -135,15 +135,41 @@ angular.module('starter.controllers', [])
                             });
                           }
 
-                          
                           // $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&startDT=2016-01-01T00:00-0700&endDT=2016-04-23T01:00-0700&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
                           //   console.log(data);
 
+                          $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
+                              var timeSeriesArray = data.data.value.timeSeries;
+                              var usgsSiteCandidates = {};
+                              var viableUsgsSiteCodes = [];
 
-                          // });
+                              for (var i=0; i<timeSeriesArray.length; i++){
+                                if (!usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName]) {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName] = [timeSeriesArray[i], {flow: false, temp: false}];
+                                }
+                                if (timeSeriesArray[i].variable.variableDescription === "Discharge, cubic feet per second") {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow = true;
+                                  if (usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow === true && usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp === true){
+                                    viableUsgsSiteCodes.push(timeSeriesArray[i].sourceInfo.siteCode[0].value);
+                                  }
+                                }
+                                else if (timeSeriesArray[i].variable.variableDescription ===  "Temperature, water, degrees Celsius") {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp = true;
+                                  if (usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow === true && usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp === true){
+                                    viableUsgsSiteCodes.push(timeSeriesArray[i].sourceInfo.siteCode[0].value);
+                                  }
+                                }
+                              } // end for loop
+                              console.log(viableUsgsSiteCodes)
+                            }
+                          );
 
+                          // for(var i=0;i<arr.length;i++){
+                          //   console.log(arr[i]);
+                          //   // $http.get("")
+                          // }
 
-                          google.maps.event.addListener($scope.map, 'dragend', function(event) { 
+                          google.maps.event.addListener($scope.map, 'dragend', function(event) {
                               var new_coordinates = {
                                   "latitude":this.getCenter().lat(),
                                   "longitude": this.getCenter().lng()
@@ -170,6 +196,93 @@ angular.module('starter.controllers', [])
               }
             });
 
+        var USGSUri = 'http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-83.000000,36.500000,-81.000000,38.500000&parameterCd=00010,00060'
+
+        var determineSpawningSuitability = function(temp, flowSpike, gdd){
+          var spawningSuitability = "Unknown";
+
+          if (gdd < 650 || temp < 17) {
+            spawningSuitability = "Not suitable";
+          }
+          else if (gdd < 900){
+            if (flowSpike < .7){
+              spawningSuitability = "Minimally suitable";
+            }
+            else if (flowSpike > .7){
+              spawningSuitability = "Suitable";
+            }
+          }
+          else if (gdd > 900){
+            if (flowSpike < .7){
+              spawningSuitability = "Very suitable";
+            }
+            else if (flowSpike > .7){
+              spawningSuitability = "Highly suitable";
+            }
+          }
+          return spawningSuitability;
+        }
+
+        var findSitesWithFlowAndTemp = function(measurementSites){
+
+          var sitesWithValidFlowAndTemp = {};
+          var sitesWithFlowAndTemp = {};
+          for (var i=0; i < measurementSites.length; i++ ){
+            var validTemp = false;
+            var validFlow = false;
+            var temp;
+            var flow;
+
+            if (!sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName]){
+              sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName] = measurementSites[i];
+            }
+            else {
+            // Check if either saved site or current site has valid temp
+              if (sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].variable && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].variable.variableName === "Temperature, water, &#176;C" && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value[0].value !== "-999999") {
+                validTemp = true;
+                temp = sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value[0].value;
+              }
+              else if (measurementSites[i].variable.variableName === "Temperature, water, &#176;C" && measurementSites[i].values && measurementSites[i].values[0].value&& measurementSites[i].values[0].value[0].value !== "-999999") {
+                validTemp = true;
+                temp = measurementSites[i].values[0].value[0].value;
+              }
+
+              // Check if either saved site or current site has valid flow
+              if (sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].variable.variableName === "Streamflow, ft&#179;/s" && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value && sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value[0].value !== "-999999") {
+                validFlow = true;
+                flow = sitesWithFlowAndTemp[measurementSites[i].sourceInfo.siteName].values[0].value[0].value;
+              }
+              else if (measurementSites[i].variable.variableName === "Streamflow, ft&#179;/s" && measurementSites[i].values && measurementSites[i].values[0].value && measurementSites[i].values[0].value[0].value !== "-999999") {
+                validFlow = true;
+                flow = measurementSites[i].values[0].value[0].value;
+              }
+
+            }
+
+            if (validTemp === true && validFlow === true) {
+
+              sitesWithValidFlowAndTemp[measurementSites[i].sourceInfo.siteName] = {temp: temp, flow: flow}
+            }
+          } // end for loop
+          // console.log("SITES WITH F/T:" + JSON.stringify(sitesWithValidFlowAndTemp))
+
+
+
+        }
+
+        var getUSGSData = function(){
+          $http.get(USGSUri).then(function(response){
+            USGSMeasurementSites = response.data.value.timeSeries;
+            console.log(USGSMeasurementSites);
+
+            findSitesWithFlowAndTemp(USGSMeasurementSites);
+
+          }, function(error){
+            console.log("ERROR: " + error)
+          });
+        }
+
+        getUSGSData();
             });
     }
 
