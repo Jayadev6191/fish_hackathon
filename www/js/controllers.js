@@ -1,25 +1,155 @@
 angular.module('starter.controllers', [])
 
-.controller('DashCtrl', function($scope, $ionicPlatform, $cordovaGeolocation, $http) {
+.controller('DashCtrl', function($scope,$ionicPlatform,$timeout, $ionicLoading,$http) {
   $ionicPlatform.ready(function() {
+    $scope.currentState = $("#states").val();
+    console.log($scope.currentState);
+
+    $("#states").on('change',function(){
+        $scope.currentState = this.value;
+    });
 
     var posOptions = {timeout: 10000, enableHighAccuracy: false};
-    $cordovaGeolocation
-      .getCurrentPosition(posOptions)
-      .then(function (position) {
-        console.log(position);
-        $scope.lat  = position.coords.latitude;
-        $scope.long = position.coords.longitude;
+    // Setup the loader
+    $ionicLoading.show({
+      content: 'Loading',
+      animation: 'fade-in',
+      showBackdrop: true,
+      maxWidth: 200,
+      showDelay: 0
+    });
+
+    $timeout(function () {
+      $ionicLoading.hide();
+    }, 4000);
 
 
-        var latLng = new google.maps.LatLng($scope.lat, $scope.long);
+    if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position){
+            var coordinates={
+              "latitude": position.coords.latitude,
+              "longitude": position.coords.longitude
+            };
+            console.log(coordinates);
 
-        var mapOptions = {
-            center: latLng,
-            zoom: 15,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+            var geocoder = new google.maps.Geocoder();
+            var latLng = new google.maps.LatLng(coordinates.latitude, coordinates.longitude);
+
+            geocoder.geocode({'latLng': latLng},function(results, status) {
+              if (status == google.maps.GeocoderStatus.OK) {
+                      if (results[0]) {
+                          var add= results[0].formatted_address ;
+                          var value=add.split(",");
+                          count=value.length;
+                          state=value[count-2].substring(1,3);
+                          console.log(state);
+
+                          $('#states option[value='+state+']').prop('selected', true);
+
+                          // var image = "../img/fishpin_minimally_suitable.png";
+
+                          // var icon = {
+                          //     url: "../img/fishpin_minimally_suitable.png", // url
+                          //     scaledSize: new google.maps.Size(50, 50), // scaled size
+                          //     origin: new google.maps.Point(0,0), // origin
+                          //     anchor: new google.maps.Point(0, 0) // anchor
+                          // };
+                          console.log(latLng);
+                          var mapOptions = {
+                              center: latLng,
+                              zoom: 8,
+                              mapTypeId: google.maps.MapTypeId.ROADMAP
+                          };
+
+                          $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+                          var marker = new google.maps.Marker({
+                            position: latLng,
+                            map: $scope.map,
+                            title: 'You are here!',
+                            animation: google.maps.Animation.DROP,
+                            draggable: true
+                          });
+
+                          var arr = [
+                                      {
+                                        "latitude":-88.5318000913,
+                                        "longitude":41.0076104838
+                                      },
+                                      {
+                                        "latitude": -88.5318000913,
+                                        "longitude":42.4733776149},
+                                      {
+                                        "latitude":-86.0848991275,
+                                        "longitude":42.4733776149},
+                                      {
+                                        "latitude":-86.0848991275,
+                                        "longitude":41.0076104838
+                                      },
+                                      {
+                                        "latitude":-88.5318000913,
+                                        "longitude":41.0076104838
+                                      }
+                                    ];
+
+
+                          $http.get("http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-89.118042,40.954649,-85.536499,42.423102&parameterCd=00060,00010&siteType=LK,ST&siteStatus=active").then(function(data){
+                              var timeSeriesArray = data.data.value.timeSeries;
+                              var usgsSiteCandidates = {};
+                              var viableUsgsSiteCodes = [];
+
+                              for (var i=0; i<timeSeriesArray.length; i++){
+                                if (!usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName]) {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName] = [timeSeriesArray[i], {flow: false, temp: false}];
+                                }
+                                if (timeSeriesArray[i].variable.variableDescription === "Discharge, cubic feet per second") {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow = true;
+                                  if (usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow === true && usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp === true){
+                                    viableUsgsSiteCodes.push(timeSeriesArray[i].sourceInfo.siteCode[0].value);
+                                  }
+                                }
+                                else if (timeSeriesArray[i].variable.variableDescription ===  "Temperature, water, degrees Celsius") {
+                                  usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp = true;
+                                  if (usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].flow === true && usgsSiteCandidates[timeSeriesArray[i].sourceInfo.siteName][1].temp === true){
+                                    viableUsgsSiteCodes.push(timeSeriesArray[i].sourceInfo.siteCode[0].value);
+                                  }
+                                }
+                              } // end for loop
+                              console.log(viableUsgsSiteCodes)
+                            }
+                          );
+
+                          // for(var i=0;i<arr.length;i++){
+                          //   console.log(arr[i]);
+                          //   // $http.get("")
+                          // }
+
+                          google.maps.event.addListener($scope.map, 'dragend', function(event) {
+                              var new_coordinates = {
+                                  "latitude":this.getCenter().lat(),
+                                  "longitude": this.getCenter().lng()
+                              };
+
+                              console.log(new_coordinates);
+
+
+                              $http.get('https://floating-basin-31957.herokuapp.com/').then(function(data){
+                                // console.log('test');
+                                // console.log(data);
+                              });
+
+                              // API Call to Dan's Service
+
+                          });
+                      }
+                      else  {
+                          alert("address not found");
+                      }
+              }
+               else {
+                  alert("Geocoder failed");
+              }
+            });
 
         var USGSUri = 'http://waterservices.usgs.gov/nwis/iv/?format=json&bBox=-83.000000,36.500000,-81.000000,38.500000&parameterCd=00010,00060'
 
@@ -108,10 +238,9 @@ angular.module('starter.controllers', [])
         }
 
         getUSGSData();
+            });
+    }
 
-      }, function(err) {
-        // error
-      });
     });
 
 })
