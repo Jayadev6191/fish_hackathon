@@ -74,20 +74,14 @@ angular.module('starter.controllers', [])
                           $http.get("../data/final.json").then(function(result){
                               console.log(result.data);
                               for(var i=0;i<result.data.length;i++){
-                                dropPin(result.data[i]);
+                                $scope.dropPin(result.data[i]);
                               }
                           });
 
-                          function dropPin(pinData){
+                          $scope.dropPin = function(pinData){
                             console.log(pinData);
                             var latLng = new google.maps.LatLng(pinData.latitude, pinData.longitude);
                             var pin;
-                            // var icon = {
-                          //     url: "../img/fishpin_minimally_suitable.png", // url
-                          //     scaledSize: new google.maps.Size(50, 50), // scaled size
-                          //     origin: new google.maps.Point(0,0), // origin
-                          //     anchor: new google.maps.Point(0, 0) // anchor
-                          // };
                             switch(pinData.suitability.toLowerCase()) {
                                 case 'minimally suitable':
                                     pin = {
